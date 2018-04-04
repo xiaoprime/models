@@ -155,7 +155,7 @@ def parse_record(raw_record, is_training):
 
 
 def input_fn(is_training, data_dir, batch_size, num_epochs=1,
-             num_parallel_calls=1, use_distribution_strategy=False,
+             use_distribution_strategy=False,
              gpus_for_distribution_strategy=1):
   """Input function which provides batches for train or eval.
 
@@ -164,12 +164,9 @@ def input_fn(is_training, data_dir, batch_size, num_epochs=1,
     data_dir: The directory containing the input data.
     batch_size: The number of samples per batch.
     num_epochs: The number of epochs to repeat the dataset.
-    num_parallel_calls: The number of records that are processed in parallel.
-      This can be optimized per data set but for generally homogeneous data
-      sets, should be approximately the number of available CPU cores.
-    multi_gpu: Whether this is run multi-GPU. Note that this is only required
-      currently to handle the batch leftovers, and can be removed
-      when that is handled directly by Estimator.
+    use_distribution_strategy: Whether DistributionStrategies API is used.
+    gpus_for_distribution_strategy: How many GPUs are used with
+      DistributionStrategies.
 
   Returns:
     A dataset that can be used for iteration.
@@ -188,7 +185,7 @@ def input_fn(is_training, data_dir, batch_size, num_epochs=1,
 
   return resnet_run_loop.process_record_dataset(
       dataset, is_training, batch_size, _SHUFFLE_BUFFER, parse_record,
-      num_epochs, num_parallel_calls, examples_per_epoch=num_images,
+      num_epochs, examples_per_epoch=num_images,
       use_distribution_strategy=use_distribution_strategy,
       gpus_for_distribution_strategy=gpus_for_distribution_strategy
   )

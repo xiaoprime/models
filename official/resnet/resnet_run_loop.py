@@ -26,7 +26,8 @@ from __future__ import print_function
 import argparse
 import os
 
-import tensorflow as tf  # pylint: disable=g-bad-import-order
+# pylint: disable=g-bad-import-order
+import tensorflow as tf
 from tensorflow.contrib.distribute.python import mirrored_strategy
 from tensorflow.contrib.distribute.python import one_device_strategy
 from tensorflow.python.client import device_lib
@@ -37,14 +38,14 @@ from official.utils.arg_parsers import parsers
 from official.utils.export import export
 from official.utils.logs import hooks_helper
 from official.utils.logs import logger
+# pylint: enable=g-bad-import-order
 
 
 ################################################################################
 # Functions for input processing.
 ################################################################################
 def process_record_dataset(dataset, is_training, batch_size, shuffle_buffer,
-                           parse_record_fn, num_epochs=1, num_parallel_calls=1,
-                           examples_per_epoch=0,
+                           parse_record_fn, num_epochs=1, examples_per_epoch=0,
                            use_distribution_strategy=False,
                            gpus_for_distribution_strategy=1):
   """Given a Dataset with raw records, return an iterator over the records.
@@ -59,9 +60,6 @@ def process_record_dataset(dataset, is_training, batch_size, shuffle_buffer,
     parse_record_fn: A function that takes a raw record and returns the
       corresponding (image, label) pair.
     num_epochs: The number of epochs to repeat the dataset.
-    num_parallel_calls: The number of records that are processed in parallel.
-      This can be optimized per data set but for generally homogeneous data
-      sets, should be approximately the number of available CPU cores.
     examples_per_epoch: The number of examples in the current set that
       are processed each epoch. Note that this is only used for multi-GPU mode,
       and only to handle what will eventually be handled inside of Estimator.
@@ -138,10 +136,10 @@ def get_synth_input_fn(height, width, num_channels, num_classes):
     An input_fn that can be used in place of a real one to return a dataset
     that can be used for iteration.
   """
-  def input_fn(is_training, data_dir, batch_size,
-      use_distribution_strategy=False, gpus_for_distribution_strategy=1,
-      *args, **kwargs):  # pylint: disable=unused-argument
-    # TODO(taylorrobie@) remove when DistributionStrategies uses global batch size
+  def input_fn(is_training, data_dir, batch_size,  # pylint: disable=unused-argument
+               use_distribution_strategy=False,
+               gpus_for_distribution_strategy=1, *args, **kwargs):  # pylint: disable=unused-argument
+    # TODO(taylorrobie@) cull DistributionStrategies uses global batch size
     per_device_batch_size = compute_per_device_batch_size(
         batch_size=batch_size,
         use_distribution_strategy=use_distribution_strategy,
@@ -320,7 +318,17 @@ def compute_per_device_batch_size(batch_size, use_distribution_strategy,
   directly. Multi-GPU support is currently experimental, however,
   so doing the work here until that feature is in place.
 
+  Args:
+    batch_size: Global batch size to be divided among devices.
+    use_distribution_strategy: Whether DistributionStrategies API is used.
+    gpus_for_distribution_strategy: How many GPUs are used with
+      DistributionStrategies.
 
+  Returns:
+    Batch size per device.
+
+  Raises:
+    ValueError: if batch_size is not divisible by number of devices
   """
   if use_distribution_strategy and gpus_for_distribution_strategy > 1:
     remainder = batch_size % gpus_for_distribution_strategy
@@ -328,8 +336,8 @@ def compute_per_device_batch_size(batch_size, use_distribution_strategy,
       err = ('When running with multiple GPUs, batch size '
              'must be a multiple of the number of available GPUs. Found {} '
              'GPUs with a batch size of {}; try --batch_size={} instead.'
-             ).format(gpus_for_distribution_strategy, batch_size,
-                      batch_size - remainder)
+            ).format(gpus_for_distribution_strategy, batch_size,
+                     batch_size - remainder)
       raise ValueError(err)
     return int(batch_size / gpus_for_distribution_strategy)
   return batch_size
@@ -350,13 +358,13 @@ def assign_multi_gpu(flags):
   if (flags.use_distribution_strategy and
       flags.gpus_for_distribution_strategy > 1):
     if flags.gpus_for_distribution_strategy > num_gpus:
-      raise ValueError("{} GPUs specified, only {} detected.".format(
+      raise ValueError('{} GPUs specified, only {} detected.'.format(
           flags.gpus_for_distribution_strategy,
           num_gpus
       ))
-    vars(flags)["multi_gpu"] = True
+    vars(flags)['multi_gpu'] = True
   else:
-    vars(flags)["multi_gpu"] = False
+    vars(flags)['multi_gpu'] = False
 
 
 def resnet_main(flags, model_function, input_function, shape=None):
@@ -418,7 +426,7 @@ def resnet_main(flags, model_function, input_function, shape=None):
 
   if flags.benchmark_log_dir is not None:
     benchmark_logger = logger.BenchmarkLogger(flags.benchmark_log_dir)
-    benchmark_logger.log_run_info("resnet")
+    benchmark_logger.log_run_info('resnet')
   else:
     benchmark_logger = None
 
@@ -493,7 +501,7 @@ class ResnetArgParser(argparse.ArgumentParser):
     super(ResnetArgParser, self).__init__(parents=[
         parsers.BaseParser(multi_gpu=False),
         parsers.DistributionStrategiesParser(),
-        parsers.PerformanceParser(),
+        parsers.PerformanceParser(num_parallel_calls=False),
         parsers.ImageModelParser(),
         parsers.ExportParser(),
         parsers.BenchmarkParser(),
